@@ -268,28 +268,36 @@ def install_nvim_and_astronvim(dry_run: bool = False, password: str = None):
     print("Neovim and Git setup commands issued.")
 
 def install_nerd_font(dry_run: bool = False, password: str = None):
-    """Installs MesloLGS NF Nerd Font."""
+    """Installs MesloLGS NF Nerd Font and checks if they are already cached."""
     print("--- Installing MesloLGS NF Nerd Font ---")
 
     font_dir = os.path.expanduser("~/.local/share/fonts/MesloLGS NF")
-    if os.path.isdir(font_dir):
-        print("MesloLGS NF fonts appear to be already installed.")
-        print("Updating font cache just in case...")
-        run("fc-cache -fv", error_message="Failed to update font cache.", dry_run=dry_run)
-        print("MesloLGS NF font installation commands issued.")
-        return
-
-    print("Creating font directory...")
-    run(f"mkdir -p \"{font_dir}\"", dry_run=dry_run)
-
-    base_url = "https://github.com/romkatv/powerlevel10k-media/raw/master/"
     font_files = [
         "MesloLGS NF Regular.ttf",
         "MesloLGS NF Bold.ttf",
         "MesloLGS NF Italic.ttf",
         "MesloLGS NF Bold Italic.ttf",
     ]
+    
+    # Check if all font files already exist
+    all_fonts_exist = True
+    if os.path.isdir(font_dir):
+        for font_file in font_files:
+            if not os.path.exists(os.path.join(font_dir, font_file)):
+                all_fonts_exist = False
+                break
+    else:
+        all_fonts_exist = False
 
+    if all_fonts_exist:
+        print("MesloLGS NF fonts are already installed and cached.")
+        return
+
+    print("Creating font directory...")
+    run(f"mkdir -p \"{font_dir}\"", dry_run=dry_run)
+
+    base_url = "https://github.com/romkatv/powerlevel10k-media/raw/master/"
+    
     for font_file in font_files:
         # URL-encode the spaces in the font_file name
         encoded_font_file = font_file.replace(" ", "%20")
@@ -306,20 +314,20 @@ def install_nerd_font(dry_run: bool = False, password: str = None):
 
 def install_utility_programs(dry_run: bool = False, password: str = None):
 
-    cargo_programs = [
-    "exa",
-     "bottom",
-    "watchexec-cli",
-     ];
-    for program in cargo_programs:
-        print(f"--- Installing {program} via cargo ---")
-        if is_command_available(program):
-            print(f"{program} is already installed.")
+    cargo_programs = {
+        "exa": "exa",
+        "bottom": "btm",
+        "watchexec-cli": "watchexec",
+    }
+    for package, command in cargo_programs.items():
+        print(f"--- Installing {package} via cargo ---")
+        if is_command_available(command):
+            print(f"{package} (command: {command}) is already installed.")
         else:
-            print(f"Installing {program}...")
-            run(f"cargo install {program}",
-                error_message=f"Failed to install {program} via cargo.", dry_run=dry_run)
-            print(f"{program} installation command issued.")
+            print(f"Installing {package}...")
+            run(f"cargo install {package}",
+                error_message=f"Failed to install {package} via cargo.", dry_run=dry_run)
+            print(f"{package} installation command issued.")
 
     # apt packages
 
