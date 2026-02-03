@@ -304,6 +304,47 @@ def install_nerd_font(dry_run: bool = False, password: str = None):
     run("fc-cache -fv", error_message="Failed to update font cache.", dry_run=dry_run)
     print("MesloLGS NF font installation commands issued.")
 
+def install_utility_programs(dry_run: bool = False, password: str = None):
+
+    cargo_programs = [
+    "exa",
+     "bottom",
+    "watchexec-cli",
+     ];
+    for program in cargo_programs:
+        print(f"--- Installing {program} via cargo ---")
+        if is_command_available(program):
+            print(f"{program} is already installed.")
+        else:
+            print(f"Installing {program}...")
+            run(f"cargo install {program}",
+                error_message=f"Failed to install {program} via cargo.", dry_run=dry_run)
+            print(f"{program} installation command issued.")
+
+    # apt packages
+
+    apt_programs = [
+        "wl-clipboard",
+        "cmatrix",
+        "neofetch",
+        "htop",
+        "tree"
+        ]
+
+    print("--- Installing utility programs via apt ---")
+    for program in apt_programs:
+        if is_command_available(program):
+            print(f"{program} is already installed.")
+        else:
+            print(f"Installing {program}...")
+            run(f"sudo apt update && sudo apt install -y {program}",
+                error_message=f"Failed to install {program} via apt.", dry_run=dry_run, password=password)
+            print(f"{program} installation command issued.")
+    
+
+
+
+
 
 if __name__ == "__main__":
     print("Starting CLI setup script...")
@@ -335,6 +376,7 @@ if __name__ == "__main__":
     install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password) # Install nvim and git
     setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password) # Stow dotfiles including astronvim
     install_nerd_font(dry_run=args.dry_run, password=user_password)
+    install_utility_programs(dry_run=args.dry_run, password=user_password)
 
     print("\nCLI setup script finished.")
     if args.dry_run:

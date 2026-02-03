@@ -1,11 +1,44 @@
-if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 -- You can also add or configure plugins by creating files in this `plugins/` folder
 -- PLEASE REMOVE THE EXAMPLES YOU HAVE NO INTEREST IN BEFORE ENABLING THIS FILE
 -- Here are some examples:
 
 ---@type LazySpec
 return {
+  {
+    "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "BufEnter",
+    config = function()
+      require("copilot").setup({
+        suggestion = {
+          auto_trigger = true,
+          debounce = 75,
+          keymap = {
+            accept = "<C-l>",
+            accept_word = false,
+            accept_line = "<C-l>",
+            next = "<M-]>",
+            prev = "<M-[>",
+            dismiss = "<C-]>",
+          },
+        },
+        panel = {
+          enabled = true,
+          auto_refresh = true,
+          keymap = {
+            jump_next = "[",
+            jump_prev = "]",
+            accept = "<C-l>",
+            dismiss = "<C-]>",
+          },
+          layout = {
+            position = "bottom", -- | top | left | right
+            ratio = 0.4,
+          },
+        },
+      })
+    end,
+  },
 
   -- == Examples of Adding Plugins ==
 
