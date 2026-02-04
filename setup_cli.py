@@ -174,6 +174,57 @@ def install_powerlevel10k(dry_run: bool = False, password: str = None):
         error_message="Failed to clone Powerlevel10k repository.", dry_run=dry_run, password=password)
     print("Powerlevel10k cloning command issued.")
 
+def install_oh_my_zsh_plugins(dry_run: bool = False, password: str = None):
+    """Installs specified Oh My Zsh plugins."""
+    print("--- Installing Oh My Zsh Plugins ---")
+    plugins_dir = os.path.expanduser("~/.oh-my-zsh/custom/plugins")
+    
+    # Ensure the plugins directory exists
+    run(f"mkdir -p {plugins_dir}", dry_run=dry_run)
+
+    plugins_to_install = {
+        "zsh-syntax-highlighting": "https://github.com/zsh-users/zsh-syntax-highlighting.git",
+        "zsh-autosuggestions": "https://github.com/zsh-users/zsh-autosuggestions",
+        "zsh-vi-mode": "https://github.com/jeffreytse/zsh-vi-mode.git",
+    }
+
+    for plugin_name, repo_url in plugins_to_install.items():
+        plugin_path = os.path.join(plugins_dir, plugin_name)
+        if os.path.exists(plugin_path):
+            print(f"{plugin_name} is already installed.")
+        else:
+            print(f"Cloning {plugin_name} repository...")
+            run(f"git clone --depth=1 {repo_url} {plugin_path}",
+                error_message=f"Failed to clone {plugin_name} repository.", dry_run=dry_run, password=password)
+            print(f"{plugin_name} cloning command issued.")
+    print("Oh My Zsh plugin installation commands issued.")
+
+def install_fzf(dry_run: bool = False, password: str = None):
+    """Installs fzf (fuzzy finder)."""
+    print("--- Installing fzf ---")
+    fzf_dir = os.path.expanduser("~/.fzf")
+
+    # check if fzf is already installed
+    if os.path.exists(fzf_dir):
+        print("fzf is already installed in ~/.fzf.")
+        return
+
+    print("Cloning fzf repository...")
+    run(f"git clone --depth 1 https://github.com/junegunn/fzf.git {fzf_dir}",
+        error_message="Failed to clone fzf repository.", dry_run=dry_run, password=password)
+    
+    print("Running fzf install script...")
+    # The install script is interactive by default, use --all to bypass some prompts
+    # and --no-bash-completion, --no-fish-completion, --no-key-bindings
+    # because oh-my-zsh handles completion and key bindings via its plugin system.
+    # However, the user might want these, so let's use the default install script without arguments
+    # and let the user interact if --dry-run is false.
+    # For a fully automated script, it's better to explicitly list the options, but for now,
+    # just running install script.
+    run(f"{fzf_dir}/install --key-bindings --completion --no-update-rc",
+        error_message="Failed to run fzf install script.", dry_run=dry_run, password=password)
+    print("fzf installation command issued.")
+
 def setup_dotfiles_with_stow(dry_run: bool = False, password: str = None):
     """Sets up dotfiles using GNU Stow."""
     print("--- Setting up Dotfiles with Stow ---")
@@ -379,6 +430,8 @@ if __name__ == "__main__":
 
     install_rust(dry_run=args.dry_run, password=user_password)
     setup_oh_my_zsh(dry_run=args.dry_run, password=user_password)
+    install_oh_my_zsh_plugins(dry_run=args.dry_run, password=user_password)
+    install_fzf(dry_run=args.dry_run, password=user_password)
     install_gemini_cli(dry_run=args.dry_run, password=user_password)
     install_powerlevel10k(dry_run=args.dry_run, password=user_password)
     install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password) # Install nvim and git
