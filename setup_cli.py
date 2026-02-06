@@ -369,6 +369,8 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "exa": "exa",
         "bottom": "btm",
         "watchexec-cli": "watchexec",
+        "bat": "bat",
+        "fd-find": "fd",
     }
     for package, command in cargo_programs.items():
         print(f"--- Installing {package} via cargo ---")
