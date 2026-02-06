@@ -363,6 +363,47 @@ def install_nerd_font(dry_run: bool = False, password: str = None):
     run("fc-cache -fv", error_message="Failed to update font cache.", dry_run=dry_run)
     print("MesloLGS NF font installation commands issued.")
 
+def install_docker(dry_run: bool = False, password: str = None):
+    """Installs Docker using the convenience script and sets up user permissions."""
+    print("--- Installing Docker ---")
+
+    # Check if Docker is already installed by looking for 'docker' command
+    if is_command_available("docker"):
+        print("Docker is already installed.")
+        # Check if current user is in the docker group
+        try:
+            subprocess.run("groups | grep -q docker", shell=True, check=True, text=True, capture_output=True)
+            print("User is already in the 'docker' group.")
+        except subprocess.CalledProcessError:
+            print("User is not in the 'docker' group. Adding user to 'docker' group...")
+            run("sudo usermod -aG docker $USER", error_message="Failed to add user to 'docker' group.", dry_run=dry_run, password=password)
+            if not dry_run:
+                print("\n------------------------------------------------------------")
+                print("IMPORTANT: User added to 'docker' group.")
+                print("For this change to take full effect, you MUST log out of your current session")
+                print("and log back in. You will not be able to run docker commands without sudo until then.")
+                print("------------------------------------------------------------")
+        return
+
+    print("Downloading and executing Docker convenience script...")
+    # The convenience script itself handles installing docker-ce, containerd, and docker-compose-plugin
+    run("curl -fsSL https://get.docker.com -o /tmp/get-docker.sh",
+        error_message="Failed to download Docker convenience script.", dry_run=dry_run)
+    run("sudo sh /tmp/get-docker.sh",
+        error_message="Failed to execute Docker convenience script.", dry_run=dry_run, password=password)
+    run("rm /tmp/get-docker.sh", error_message="Failed to remove Docker convenience script.", dry_run=dry_run)
+
+    # Add the current user to the 'docker' group
+    print("Adding current user to the 'docker' group...")
+    run("sudo usermod -aG docker $USER", error_message="Failed to add user to 'docker' group.", dry_run=dry_run, password=password)
+    if not dry_run:
+        print("\n------------------------------------------------------------")
+        print("IMPORTANT: Docker installed and user added to 'docker' group.")
+        print("For this change to take full effect, you MUST log out of your current session")
+        print("and log back in. You will not be able to run docker commands without sudo until then.")
+        print("------------------------------------------------------------")
+    print("Docker installation command issued.")
+
 def install_utility_programs(dry_run: bool = False, password: str = None):
 
     cargo_programs = {
@@ -440,6 +481,7 @@ if __name__ == "__main__":
     setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password) # Stow dotfiles including astronvim
     install_nerd_font(dry_run=args.dry_run, password=user_password)
     install_utility_programs(dry_run=args.dry_run, password=user_password)
+    install_docker(dry_run=args.dry_run, password=user_password)
 
     print("\nCLI setup script finished.")
     if args.dry_run:
