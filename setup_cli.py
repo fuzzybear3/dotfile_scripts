@@ -253,6 +253,14 @@ def setup_dotfiles_with_stow(dry_run: bool = False, password: str = None):
     else:
         print(f"Skipping zshrc stow: '{zshrc_package_path}' not found. Create this directory with your .zshrc inside to stow it.")
 
+    # Stow git config
+    git_package_path = os.path.join(dotfiles_path, "git")
+    if os.path.isdir(git_package_path):
+        print("Stowing git configuration...")
+        run("stow -R -t ~ git", dir_path=dotfiles_path, error_message="Failed to stow git.", dry_run=dry_run, password=password)
+    else:
+        print(f"Skipping git stow: '{git_package_path}' not found.")
+
     # Stow astronvim (will only work if dotfiles/astronvim exists)
     astronvim_package_path = os.path.join(dotfiles_path, "astronvim")
     if os.path.isdir(astronvim_package_path):
@@ -412,6 +420,10 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "watchexec-cli": "watchexec",
         "bat": "bat",
         "fd-find": "fd",
+        "ripgrep": "rg",
+        "tree-sitter-cli": "tree-sitter",
+        "trunk": "trunk",
+        "difftastic": "difft",
     }
     for package, command in cargo_programs.items():
         print(f"--- Installing {package} via cargo ---")
