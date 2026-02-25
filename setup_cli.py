@@ -442,7 +442,9 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "cmatrix",
         "neofetch",
         "htop",
-        "tree"
+        "tree",
+        "python3-pip",
+        "python3-venv",
         ]
 
     print("--- Installing utility programs via apt ---")

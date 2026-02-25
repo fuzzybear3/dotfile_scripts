@@ -122,3 +122,12 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+source /opt/ros/jazzy/setup.zsh
+
+export PATH="/home/stevenguido/.pixi/bin:$PATH"
+
+# FreeCAD pixi build - force XWayland + system GPU drivers (Coin3D needs GLX)
+alias freecad-dev='QT_QPA_PLATFORM=xcb __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0 /home/stevenguido/repos/FreeCAD/build/release/bin/FreeCAD'
+
+alias python='python3'
