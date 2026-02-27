@@ -5,47 +5,40 @@ import getpass
 import argparse
 
 def run(command: str, error_message: str = None, dry_run: bool = False, password: str = None, dir_path: str = None):
-    """
-    Runs a shell command, handles errors, and provides optional custom error messages.
-    Can also handle commands requiring sudo by piping a password to stdin.
-
-    Args:
-        command (str): The shell command to execute.
-        error_message (str, optional): A custom message to display if the command fails.
-                                       Defaults to None.
-        dry_run (bool): If True, print the command but do not execute it.
-        password (str, optional): The password to use for commands requiring sudo or chsh.
-        dir_path (str, optional): The directory to run the command in. Defaults to current.
-    """
     if dry_run:
         print(f"[Dry Run] Would execute: {command} in {dir_path if dir_path else os.getcwd()}")
         return
 
-    process_input = None
-    # For sudo commands, we echo the password and pipe it to sudo -S
+    # For chsh, pipe password directly to stdin using subprocess.run
+    if password and "chsh" in command:
+        try:
+            subprocess.run(command, shell=True, check=True, text=True,
+                           capture_output=True, input=password + '\n', cwd=dir_path)
+        except subprocess.CalledProcessError as e:
+            if error_message:
+                print(f"Error: {error_message}", file=sys.stderr)
+            print(f"Command '{e.cmd}' failed with exit code {e.returncode}.", file=sys.stderr)
+            if e.stderr:
+                print(f"Stderr:\n{e.stderr.strip()}", file=sys.stderr)
+            sys.exit(1)
+        return
+
     if password and command.startswith("sudo"):
         command = f"echo {password} | sudo -S {command}"
-    # For chsh, it expects the password on stdin directly
-    elif password and "chsh" in command:
-        process_input = password + '\n' # chsh expects password followed by a newline
 
-    try:
-        # shell=True is used for convenience in startup scripts to run commands
-        # as they would be typed in a shell.
-        # capture_output=True captures stdout and stderr.
-        # text=True decodes stdout and stderr as text.
-        # check=True raises a CalledProcessError if the command returns a non-zero exit code.
-        result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True, input=process_input, cwd=dir_path)
-        if result.stdout:
-            print(result.stdout.strip())
-    except subprocess.CalledProcessError as e:
+    # Stream stdout+stderr in real-time so long-running commands show progress
+    process = subprocess.Popen(
+        command, shell=True, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        cwd=dir_path
+    )
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    process.wait()
+    if process.returncode != 0:
         if error_message:
             print(f"Error: {error_message}", file=sys.stderr)
-        print(f"Command '{e.cmd}' failed with exit code {e.returncode}.", file=sys.stderr)
-        if e.stdout:
-            print(f"Stdout:\n{e.stdout.strip()}", file=sys.stderr)
-        if e.stderr:
-            print(f"Stderr:\n{e.stderr.strip()}", file=sys.stderr)
+        print(f"Command '{command}' failed with exit code {process.returncode}.", file=sys.stderr)
         sys.exit(1)
 
 def is_command_available(command: str) -> bool:
@@ -104,6 +97,28 @@ def setup_oh_my_zsh(dry_run: bool = False, password: str = None):
             print("------------------------------------------------------------")
     else:
         print("Zsh is already the default shell.")
+
+def setup_rust_dev(dry_run: bool = False, password: str = None):
+    """Installs Rust development components and tools."""
+    print("--- Setting up Rust dev tools ---")
+
+    CARGO_HOME = os.path.expanduser("~/.cargo")
+    RUSTUP_SOURCE_CMD = f'. "{CARGO_HOME}/env" && '
+
+    components = ["rust-analyzer", "clippy", "rustfmt"]
+    for component in components:
+        print(f"Adding rustup component: {component}...")
+        run(RUSTUP_SOURCE_CMD + f"rustup component add {component}",
+            error_message=f"Failed to add rustup component {component}.", dry_run=dry_run)
+
+    if not is_command_available("cargo-watch"):
+        print("Installing cargo-watch...")
+        run(RUSTUP_SOURCE_CMD + "cargo install cargo-watch",
+            error_message="Failed to install cargo-watch.", dry_run=dry_run)
+    else:
+        print("cargo-watch is already installed.")
+
+    print("Rust dev tools setup complete.")
 
 def install_gemini_cli(dry_run: bool = False, password: str = None):
     """Installs NVM, Node.js (LTS), and Gemini CLI."""
@@ -462,41 +477,51 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
 
 
 
+def print_step(current: int, total: int, label: str):
+    bar_len = 20
+    filled = int(bar_len * current / total)
+    bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
+    percent = int(100 * current / total)
+    print(f"\n[{current}/{total}] {bar} {percent}% | {label}")
+    print("-" * 50)
+
+
 if __name__ == "__main__":
-    print("Starting CLI setup script...")
-    
-    parser = argparse.ArgumentParser(description="CLI setup script for Rust, Oh My Zsh, Gemini CLI, Powerlevel10k, and dotfiles.")
+    parser = argparse.ArgumentParser(description="CLI setup script.")
     parser.add_argument("--dry-run", action="store_true", help="If set, print commands but do not execute them.")
     args = parser.parse_args()
 
-    # Get password once at the beginning if not in dry-run mode
     user_password = None
     if not args.dry_run:
         try:
-            # Using getpass for secure password input
             user_password = getpass.getpass("Enter your password for sudo and chsh (will not be displayed): ")
         except EOFError:
             print("Password input cancelled.", file=sys.stderr)
             sys.exit(1)
 
-    # Example usage of run function (from previous request)
-    print("\n--- Testing run function ---")
-    run("echo 'Hello from run function!'", dry_run=args.dry_run, password=user_password)
-    print("--- End testing run function ---\
-")
+    steps = [
+        ("Install Rust",              lambda: install_rust(dry_run=args.dry_run, password=user_password)),
+        ("Set up Rust dev tools",     lambda: setup_rust_dev(dry_run=args.dry_run, password=user_password)),
+        ("Set up Oh My Zsh",          lambda: setup_oh_my_zsh(dry_run=args.dry_run, password=user_password)),
+        ("Install Oh My Zsh plugins", lambda: install_oh_my_zsh_plugins(dry_run=args.dry_run, password=user_password)),
+        ("Install fzf",               lambda: install_fzf(dry_run=args.dry_run, password=user_password)),
+        ("Install Gemini CLI",        lambda: install_gemini_cli(dry_run=args.dry_run, password=user_password)),
+        ("Install Powerlevel10k",     lambda: install_powerlevel10k(dry_run=args.dry_run, password=user_password)),
+        ("Install Neovim",            lambda: install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password)),
+        ("Set up dotfiles",           lambda: setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password)),
+        ("Install Nerd Font",         lambda: install_nerd_font(dry_run=args.dry_run, password=user_password)),
+        ("Install utility programs",  lambda: install_utility_programs(dry_run=args.dry_run, password=user_password)),
+        ("Install Docker",            lambda: install_docker(dry_run=args.dry_run, password=user_password)),
+    ]
 
-    install_rust(dry_run=args.dry_run, password=user_password)
-    setup_oh_my_zsh(dry_run=args.dry_run, password=user_password)
-    install_oh_my_zsh_plugins(dry_run=args.dry_run, password=user_password)
-    install_fzf(dry_run=args.dry_run, password=user_password)
-    install_gemini_cli(dry_run=args.dry_run, password=user_password)
-    install_powerlevel10k(dry_run=args.dry_run, password=user_password)
-    install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password) # Install nvim and git
-    setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password) # Stow dotfiles including astronvim
-    install_nerd_font(dry_run=args.dry_run, password=user_password)
-    install_utility_programs(dry_run=args.dry_run, password=user_password)
-    install_docker(dry_run=args.dry_run, password=user_password)
+    total = len(steps)
+    print(f"Starting CLI setup ({total} steps)...")
 
+    for i, (label, fn) in enumerate(steps, start=1):
+        print_step(i, total, label)
+        fn()
+
+    print(f"\n[{total}/{total}] {'█' * 20} 100% | All done!")
     print("\nCLI setup script finished.")
     if args.dry_run:
         print("\nNOTE: This was a dry run. No changes were made to your system.")
