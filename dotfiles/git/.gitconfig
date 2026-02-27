@@ -17,3 +17,5 @@
 	difftool = true
 [alias]
 	dft = difftool
+[core]
+	editor = nvim
