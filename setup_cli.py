@@ -120,30 +120,22 @@ def setup_rust_dev(dry_run: bool = False, password: str = None):
 
     print("Rust dev tools setup complete.")
 
-def install_gemini_cli(dry_run: bool = False, password: str = None):
-    """Installs NVM, Node.js (LTS), and Gemini CLI."""
-    print("--- Setting up Gemini CLI ---")
+def install_nvm_and_node(dry_run: bool = False, password: str = None):
+    """Installs NVM and Node.js (LTS)."""
+    print("--- Setting up NVM and Node.js ---")
 
     NVM_DIR = os.path.expanduser("~/.nvm")
     NVM_SH = os.path.join(NVM_DIR, "nvm.sh")
 
-    # Check for nvm installation
     if not os.path.exists(NVM_SH):
         print("NVM not found. Installing NVM...")
-        # Install NVM
-        # The official nvm install script automatically adds sourcing to shell config files.
-        # For the current session, we will manually source it after installation.
         run("curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash",
             error_message="Failed to install NVM.", dry_run=dry_run)
         if not dry_run:
-            print("NVM installation command issued. Attempting to source NVM for current session...")
-            # For the current script to use nvm, we need to source it.
-            # This is tricky because `subprocess.run` creates a new shell.
-            # We'll prepend sourcing to subsequent commands that use nvm.
+            print("NVM installation command issued.")
     else:
         print("NVM is already installed.")
 
-    # Source NVM for the current command execution context and install Node.js LTS
     NVM_SOURCE_CMD = f'export NVM_DIR="{NVM_DIR}" && [ -s "{NVM_SH}" ] && . "{NVM_SH}" && '
 
     print("Installing Node.js (LTS) using NVM...")
@@ -153,15 +145,6 @@ def install_gemini_cli(dry_run: bool = False, password: str = None):
     print("Setting Node.js (LTS) as default using NVM...")
     run(NVM_SOURCE_CMD + "nvm use --lts",
         error_message="Failed to set Node.js LTS as default.", dry_run=dry_run)
-
-    # Install gemini-cli
-    print("Installing @google/gemini-cli globally...")
-    if is_command_available("gemini"):
-        print("@google/gemini-cli is already installed.")
-    else:
-        run(NVM_SOURCE_CMD + "npm install -g @google/gemini-cli",
-            error_message="Failed to install @google/gemini-cli.", dry_run=dry_run)
-        print("Gemini CLI setup command issued.")
 
 def install_stow(dry_run: bool = False, password: str = None):
     """Installs GNU Stow if not already installed."""
@@ -427,6 +410,17 @@ def install_docker(dry_run: bool = False, password: str = None):
         print("------------------------------------------------------------")
     print("Docker installation command issued.")
 
+def install_anki(dry_run: bool = False, password: str = None):
+    """Installs Anki via Flatpak from Flathub."""
+    print("--- Installing Anki ---")
+    result = subprocess.run("flatpak list --app | grep -q net.ankiweb.Anki", shell=True, capture_output=True)
+    if result.returncode == 0:
+        print("Anki is already installed.")
+        return
+    run("flatpak install -y flathub net.ankiweb.Anki",
+        error_message="Failed to install Anki via Flatpak.", dry_run=dry_run)
+    print("Anki installation command issued.")
+
 def install_utility_programs(dry_run: bool = False, password: str = None):
 
     cargo_programs = {
@@ -505,13 +499,14 @@ if __name__ == "__main__":
         ("Set up Oh My Zsh",          lambda: setup_oh_my_zsh(dry_run=args.dry_run, password=user_password)),
         ("Install Oh My Zsh plugins", lambda: install_oh_my_zsh_plugins(dry_run=args.dry_run, password=user_password)),
         ("Install fzf",               lambda: install_fzf(dry_run=args.dry_run, password=user_password)),
-        ("Install Gemini CLI",        lambda: install_gemini_cli(dry_run=args.dry_run, password=user_password)),
+        ("Install NVM and Node.js",   lambda: install_nvm_and_node(dry_run=args.dry_run, password=user_password)),
         ("Install Powerlevel10k",     lambda: install_powerlevel10k(dry_run=args.dry_run, password=user_password)),
         ("Install Neovim",            lambda: install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password)),
         ("Set up dotfiles",           lambda: setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password)),
         ("Install Nerd Font",         lambda: install_nerd_font(dry_run=args.dry_run, password=user_password)),
         ("Install utility programs",  lambda: install_utility_programs(dry_run=args.dry_run, password=user_password)),
         ("Install Docker",            lambda: install_docker(dry_run=args.dry_run, password=user_password)),
+        ("Install Anki",              lambda: install_anki(dry_run=args.dry_run, password=user_password)),
     ]
 
     total = len(steps)
