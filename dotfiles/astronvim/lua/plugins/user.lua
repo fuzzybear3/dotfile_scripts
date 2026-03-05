@@ -28,8 +28,8 @@ return {
           keymap = {
             jump_next = "[",
             jump_prev = "]",
-            accept = "<C-l>",
-            dismiss = "<C-]>",
+            accept = "<C-CR>",
+            dismiss = false,
           },
           layout = {
             position = "bottom", -- | top | left | right
