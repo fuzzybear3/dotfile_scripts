@@ -3,6 +3,8 @@ import sys
 import os
 import getpass
 import argparse
+import json
+import urllib.request
 
 def run(command: str, error_message: str = None, dry_run: bool = False, password: str = None, dir_path: str = None):
     if dry_run:
@@ -421,6 +423,56 @@ def install_anki(dry_run: bool = False, password: str = None):
         error_message="Failed to install Anki via Flatpak.", dry_run=dry_run)
     print("Anki installation command issued.")
 
+def install_pandoc(dry_run: bool = False, password: str = None):
+    """Installs the latest Pandoc release from GitHub."""
+    print("--- Installing Pandoc ---")
+
+    if is_command_available("pandoc"):
+        print("Pandoc is already installed.")
+        return
+
+    print("Fetching latest Pandoc version from GitHub API...")
+    if dry_run:
+        version = "DRY_RUN_VERSION"
+        print(f"[Dry Run] Would fetch latest version from https://api.github.com/repos/jgm/pandoc/releases/latest")
+    else:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/jgm/pandoc/releases/latest",
+            headers={"User-Agent": "setup_cli.py"}
+        )
+        with urllib.request.urlopen(req) as resp:
+            version = json.load(resp)["tag_name"]
+    print(f"Latest Pandoc version: {version}")
+
+    software_dir = os.path.expanduser("~/software")
+    run(f"mkdir -p {software_dir}", dry_run=dry_run)
+
+    tarball = f"pandoc-{version}-linux-amd64.tar.gz"
+    download_url = f"https://github.com/jgm/pandoc/releases/download/{version}/{tarball}"
+    tarball_path = os.path.join(software_dir, tarball)
+
+    print(f"Downloading Pandoc {version}...")
+    run(f"curl -L {download_url} -o {tarball_path}",
+        error_message="Failed to download Pandoc.", dry_run=dry_run)
+
+    print("Extracting Pandoc...")
+    run(f"tar -xzf {tarball_path} -C {software_dir}",
+        error_message="Failed to extract Pandoc.", dry_run=dry_run)
+
+    bin_dir = os.path.expanduser("~/.local/bin")
+    run(f"mkdir -p {bin_dir}", dry_run=dry_run)
+
+    pandoc_bin_src = os.path.join(software_dir, f"pandoc-{version}", "bin", "pandoc")
+    run(f"cp {pandoc_bin_src} {bin_dir}/pandoc",
+        error_message="Failed to install Pandoc binary.", dry_run=dry_run)
+
+    print("Cleaning up...")
+    run(f"rm -rf {tarball_path} {os.path.join(software_dir, f'pandoc-{version}')}",
+        error_message="Failed to clean up Pandoc installation files.", dry_run=dry_run)
+
+    print(f"Pandoc {version} installed to {bin_dir}/pandoc.")
+
+
 def install_utility_programs(dry_run: bool = False, password: str = None):
 
     cargo_programs = {
@@ -507,6 +559,7 @@ if __name__ == "__main__":
         ("Install utility programs",  lambda: install_utility_programs(dry_run=args.dry_run, password=user_password)),
         ("Install Docker",            lambda: install_docker(dry_run=args.dry_run, password=user_password)),
         ("Install Anki",              lambda: install_anki(dry_run=args.dry_run, password=user_password)),
+        ("Install Pandoc",            lambda: install_pandoc(dry_run=args.dry_run, password=user_password)),
     ]
 
     total = len(steps)
