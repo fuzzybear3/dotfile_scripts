@@ -68,6 +68,8 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Set fzf installation directory path
 export FZF_BASE=~/.fzf
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
 # Which plugins would you like to load?
 # Standard plugins can be found in $ZSH/plugins/
@@ -83,6 +85,9 @@ plugins=(
     # zsh-vi-mode
     fzf
 )
+
+# Lazy-load nvm to avoid ~400ms startup penalty
+zstyle ':omz:plugins:nvm' lazy yes
 
 source $ZSH/oh-my-zsh.sh
 
@@ -118,12 +123,9 @@ source $ZSH/oh-my-zsh.sh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 export PATH="$HOME/software:$PATH"
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-source /opt/ros/jazzy/setup.zsh
 
 export PATH="/home/stevenguido/.pixi/bin:$PATH"
 
