@@ -126,6 +126,8 @@ export PATH="$HOME/software:$PATH"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+eval "$(zoxide init zsh)"
+
 
 export PATH="/home/stevenguido/.pixi/bin:$PATH"
 

@@ -496,6 +496,7 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "trunk": "trunk",
         "difftastic": "difft",
         "alacritty": "alacritty",
+        "zoxide": "zoxide",
     }
     for package, command in cargo_programs.items():
         print(f"--- Installing {package} via cargo ---")
