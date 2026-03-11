@@ -277,6 +277,16 @@ def setup_dotfiles_with_stow(dry_run: bool = False, password: str = None):
     else:
         print(f"Skipping astronvim stow: '{astronvim_package_path}' not found. Create this directory with your AstroNvim config inside to stow it to ~/.config/nvim.")
 
+    # Stow alacritty config
+    alacritty_package_path = os.path.join(dotfiles_path, "alacritty")
+    if os.path.isdir(alacritty_package_path):
+        print("Stowing alacritty configuration...")
+        alacritty_config_target = os.path.expanduser("~/.config/alacritty")
+        run(f"mkdir -p {alacritty_config_target}", dry_run=dry_run)
+        run("stow -R -t ~ alacritty", dir_path=dotfiles_path, error_message="Failed to stow alacritty.", dry_run=dry_run, password=password)
+    else:
+        print(f"Skipping alacritty stow: '{alacritty_package_path}' not found.")
+
     print("Dotfiles stowage commands issued.")
 
 def install_nvim_and_astronvim(dry_run: bool = False, password: str = None):
@@ -485,6 +495,7 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "tree-sitter-cli": "tree-sitter",
         "trunk": "trunk",
         "difftastic": "difft",
+        "alacritty": "alacritty",
     }
     for package, command in cargo_programs.items():
         print(f"--- Installing {package} via cargo ---")
@@ -521,6 +532,52 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
 
 
 
+
+
+def install_alacritty_desktop(dry_run: bool = False, password: str = None):
+    """Downloads Alacritty .desktop file and icon for desktop integration."""
+    print("--- Installing Alacritty desktop integration ---")
+
+    desktop_dir = os.path.expanduser("~/.local/share/applications")
+    icon_dir = os.path.expanduser("~/.local/share/icons/hicolor/scalable/apps")
+    desktop_path = os.path.join(desktop_dir, "Alacritty.desktop")
+    icon_path = os.path.join(icon_dir, "Alacritty.svg")
+
+    run(f"mkdir -p {desktop_dir} {icon_dir}", dry_run=dry_run)
+
+    if not os.path.exists(desktop_path):
+        print("Downloading Alacritty.desktop...")
+        run(f"curl -fsSL https://raw.githubusercontent.com/alacritty/alacritty/master/extra/linux/Alacritty.desktop -o {desktop_path}",
+            error_message="Failed to download Alacritty.desktop.", dry_run=dry_run)
+    else:
+        print("Alacritty.desktop already exists.")
+
+    if not os.path.exists(icon_path):
+        print("Downloading Alacritty icon...")
+        run(f"curl -fsSL https://raw.githubusercontent.com/alacritty/alacritty/master/extra/logo/alacritty-term.svg -o {icon_path}",
+            error_message="Failed to download Alacritty icon.", dry_run=dry_run)
+    else:
+        print("Alacritty icon already exists.")
+
+    print("Updating desktop database...")
+    run(f"update-desktop-database {desktop_dir}", dry_run=dry_run)
+    print("Alacritty desktop integration installed.")
+
+
+def set_default_terminal_alacritty(dry_run: bool = False, password: str = None):
+    """Sets Alacritty as the default terminal in COSMIC via its shortcuts config."""
+    print("--- Setting Alacritty as default terminal ---")
+
+    shortcuts_dir = os.path.expanduser("~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1")
+    shortcuts_path = os.path.join(shortcuts_dir, "system_actions")
+
+    if not dry_run:
+        os.makedirs(shortcuts_dir, exist_ok=True)
+        with open(shortcuts_path, "w") as f:
+            f.write('{\n    Terminal: "alacritty",\n}\n')
+        print("COSMIC terminal shortcut set to alacritty.")
+    else:
+        print(f"[Dry Run] Would write Terminal: alacritty to {shortcuts_path}")
 
 
 def print_step(current: int, total: int, label: str):
@@ -560,6 +617,8 @@ if __name__ == "__main__":
         ("Install Docker",            lambda: install_docker(dry_run=args.dry_run, password=user_password)),
         ("Install Anki",              lambda: install_anki(dry_run=args.dry_run, password=user_password)),
         ("Install Pandoc",            lambda: install_pandoc(dry_run=args.dry_run, password=user_password)),
+        ("Install Alacritty desktop", lambda: install_alacritty_desktop(dry_run=args.dry_run, password=user_password)),
+        ("Set default terminal",      lambda: set_default_terminal_alacritty(dry_run=args.dry_run, password=user_password)),
     ]
 
     total = len(steps)
