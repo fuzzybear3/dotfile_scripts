@@ -4,6 +4,15 @@
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# Make node available early for tools like nvim/copilot without fully loading nvm
+export NVM_DIR="$HOME/.nvm"
+_nvm_default="default"
+while [[ -f "$NVM_DIR/alias/$_nvm_default" ]]; do
+  _nvm_default="$(cat "$NVM_DIR/alias/$_nvm_default")"
+done
+export PATH="$NVM_DIR/versions/node/$_nvm_default/bin:$PATH"
+unset _nvm_default
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time Oh My Zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -104,6 +113,7 @@ source $ZSH/oh-my-zsh.sh
 # else
 #   export EDITOR='nvim'
 # fi
+export SUDO_EDITOR="$HOME/software/nvim"
 
 # Compilation flags
 # export ARCHFLAGS="-arch $(uname -m)"
@@ -133,5 +143,18 @@ export PATH="/home/stevenguido/.pixi/bin:$PATH"
 
 # FreeCAD pixi build - force XWayland + system GPU drivers (Coin3D needs GLX)
 alias freecad-dev='QT_QPA_PLATFORM=xcb __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0 /home/stevenguido/repos/FreeCAD/build/release/bin/FreeCAD'
+alias freecad=/home/stevenguido/software/FreeCAD_1.1.0-Linux-x86_64-py311.AppImage
 
 alias python='python3'
+
+# Set to 1 to alias modern tools over classic commands
+USE_MODERN_TOOLS=1
+
+if [[ "$USE_MODERN_TOOLS" == "1" ]]; then
+    command -v exa  &>/dev/null && alias ls='exa' ll='exa -l' la='exa -la' lt='exa --tree'
+    # command -v bat  &>/dev/null && alias cat='bat'
+    # command -v fd   &>/dev/null && alias find='fd'
+    # command -v rg   &>/dev/null && alias grep='rg'
+    # command -v btm  &>/dev/null && alias top='btm'
+    command -v zoxide &>/dev/null && alias cd='z'
+fi
