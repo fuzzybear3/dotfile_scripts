@@ -137,15 +137,20 @@ export PATH="$HOME/software:$PATH"
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 eval "$(zoxide init zsh)"
+eval "$(direnv hook zsh)"
 
 
 export PATH="/home/stevenguido/.pixi/bin:$PATH"
 
 # FreeCAD pixi build - force XWayland + system GPU drivers (Coin3D needs GLX)
 alias freecad-dev='QT_QPA_PLATFORM=xcb __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0 /home/stevenguido/repos/FreeCAD/build/release/bin/FreeCAD'
-alias freecad=/home/stevenguido/software/FreeCAD_1.1.0-Linux-x86_64-py311.AppImage
+alias freecad=/home/stevenguido/software/FreeCAD_1.1.1-Linux-x86_64-py311.AppImage
 
 alias python='python3'
+
+# Markdown → HTML/PDF (run from the doc project directory)
+alias make-docs='python3 $HOME/dotfile_scripts/utils/make_docs.py'
+alias make-docs-all='python3 $HOME/dotfile_scripts/utils/make_docs.py all'
 
 # Set to 1 to alias modern tools over classic commands
 USE_MODERN_TOOLS=1
@@ -158,3 +163,10 @@ if [[ "$USE_MODERN_TOOLS" == "1" ]]; then
     # command -v btm  &>/dev/null && alias top='btm'
     command -v zoxide &>/dev/null && alias cd='z'
 fi
+
+# bun completions
+[ -s "/home/stevenguido/.bun/_bun" ] && source "/home/stevenguido/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

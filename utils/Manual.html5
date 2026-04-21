@@ -1,0 +1,389 @@
+$--| FreeCAD Manual Template v1.0
+<!DOCTYPE html>
+<html$if(lang)$ lang="$lang$"$endif$$if(dir)$ dir="$dir$"$endif$>
+<head>
+  <meta charset="$if(charset)$$charset$$else$utf-8$endif$" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+$for(author-meta)$
+  <meta name="author" content="$author-meta$" />
+$endfor$
+$if(date-meta)$
+  <meta name="dcterms.date" content="$date-meta$" />
+$endif$
+$if(keywords)$
+  <meta name="keywords" content="$for(keywords)$$keywords$$sep$, $endfor$" />
+$endif$
+  <title>$if(title-prefix)$$title-prefix$ – $endif$$pagetitle$</title>
+  <style>
+/* ===== VARIABLES ===== */
+:root {
+  --bg:         #0d1117;
+  --surface:    #161b22;
+  --surface-2:  #21262d;
+  --border:     #30363d;
+  --text:       #c9d1d9;
+  --text-muted: #8b949e;
+  --heading:    #f0f6fc;
+  --accent:     #58a6ff;
+  --sidebar-w:  320px;
+  --content-max:820px;
+  --font-sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
+  --font-mono:  'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --radius:     6px;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ===== LAYOUT ===== */
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  transition: width 0.2s ease, padding 0.2s ease;
+}
+.sidebar.collapsed {
+  width: 36px;
+  padding: 16px 6px;
+}
+.sidebar.collapsed .toc-header-text,
+.sidebar.collapsed nav { display: none; }
+
+.toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar.collapsed .toc-header { border-bottom: none; padding-bottom: 0; margin-bottom: 0; justify-content: center; }
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 5px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.sidebar-toggle:hover { background: var(--surface-2); color: var(--text); }
+
+/* ===== RESIZE HANDLE ===== */
+.sidebar-resize {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+  align-self: stretch;
+}
+.sidebar-resize:hover, .sidebar-resize.dragging { background: var(--accent); opacity: 0.5; }
+
+.sidebar nav ul { list-style: none; padding: 0; margin: 0; }
+.sidebar nav > ul > li { margin-bottom: 2px; }
+.sidebar nav ul ul { padding-left: 12px; margin-top: 2px; }
+
+.sidebar nav a {
+  display: block;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  line-height: 1.4;
+  transition: background 0.1s, color 0.1s;
+}
+.sidebar nav a:hover { background: var(--surface-2); color: var(--text); }
+.sidebar nav > ul > li > a { color: var(--text); font-weight: 500; font-size: 0.85rem; }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 56px 72px 80px;
+  max-width: calc(var(--content-max) + 144px);
+}
+
+/* ===== DOC HEADER ===== */
+.doc-header {
+  margin-bottom: 48px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--heading);
+  line-height: 1.2;
+  margin: 0 0 8px 0;
+}
+.doc-subtitle { font-size: 1.1rem; color: var(--text-muted); margin: 0 0 8px 0; }
+.doc-author, .doc-date { color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0 0; }
+
+/* ===== HEADINGS ===== */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--heading);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 48px;
+  margin-bottom: 16px;
+}
+h2 {
+  font-size: 1.6rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 64px;
+}
+h3 { font-size: 1.15rem; color: var(--accent); margin-top: 36px; }
+h4 { font-size: 1rem; color: #3fb950; }
+h1:first-child, h2:first-child { margin-top: 0; }
+
+/* ===== TEXT ===== */
+p { margin: 0 0 16px 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { color: var(--heading); font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* ===== LISTS ===== */
+ul, ol { padding-left: 1.75em; margin: 0 0 16px 0; }
+li { margin-bottom: 6px; }
+li > ul, li > ol { margin-top: 6px; margin-bottom: 0; }
+li > p { margin-top: 8px; }
+
+/* ===== IMAGES ===== */
+figure { margin: 24px 0; text-align: center; }
+figure img {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* Inline icons (images alongside text) */
+p img, li img {
+  height: 1.875em;
+  vertical-align: middle;
+  border: none;
+  background: none;
+}
+
+/* Standalone screenshots (sole image in a paragraph) */
+p:has(> img:only-child) img {
+  height: auto;
+  max-width: 100%;
+  display: block;
+  margin: 8px auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* ===== CODE ===== */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.15em 0.45em;
+  color: #ff7b72;
+}
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.875rem; white-space: pre; }
+
+/* ===== BLOCKQUOTE ===== */
+blockquote {
+  border-left: 3px solid var(--border);
+  padding: 0 16px;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+}
+
+/* ===== TABLES ===== */
+table { width: 100%; border-collapse: collapse; margin: 0 0 24px 0; font-size: 0.9rem; display: block; overflow-x: auto; }
+th { background: var(--surface-2); color: var(--heading); font-weight: 600; text-align: left; padding: 8px 14px; border: 1px solid var(--border); }
+td { padding: 8px 14px; border: 1px solid var(--border); }
+tr:nth-child(even) { background: var(--surface); }
+
+/* ===== ALERTS ===== */
+div.note, div.tip, div.important, div.warning, div.caution {
+  padding: 12px 16px;
+  margin: 16px 0 20px;
+  border-left: 4px solid;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface);
+}
+div.note p:last-child, div.tip p:last-child,
+div.important p:last-child, div.warning p:last-child,
+div.caution p:last-child { margin-bottom: 0; }
+
+div.note      { border-color: #388bfd; }
+div.tip       { border-color: #3fb950; }
+div.important { border-color: #a371f7; }
+div.warning   { border-color: #d29922; }
+div.caution   { border-color: #f85149; }
+
+div.note .title p, div.tip .title p, div.important .title p,
+div.warning .title p, div.caution .title p {
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 0 0 6px 0;
+}
+div.note      .title p { color: #388bfd; }
+div.tip       .title p { color: #3fb950; }
+div.important .title p { color: #a371f7; }
+div.warning   .title p { color: #d29922; }
+div.caution   .title p { color: #f85149; }
+
+div.note      .title p::before { content: "\24D8\00A0\00A0"; }
+div.tip       .title p::before { content: "\2714\00A0\00A0"; }
+div.important .title p::before { content: "\2757\00A0\00A0"; }
+div.warning   .title p::before { content: "\26A0\00A0\00A0"; }
+div.caution   .title p::before { content: "\2717\00A0\00A0"; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+  .content { padding: 28px 24px 48px; }
+}
+  </style>
+$if(highlighting-css)$
+  <style>$highlighting-css$</style>
+$endif$
+$for(css)$
+  <link rel="stylesheet" href="$css$">
+$endfor$
+$for(header-includes)$
+  $header-includes$
+$endfor$
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    document.addEventListener('DOMContentLoaded', async () => {
+      for (const pre of document.querySelectorAll('pre.mermaid')) {
+        const code = pre.querySelector('code') ?? pre;
+        const { svg } = await mermaid.render('mg' + Math.random().toString(36).slice(2), code.textContent);
+        const div = document.createElement('div');
+        div.className = 'mermaid-diagram';
+        div.innerHTML = svg;
+        pre.replaceWith(div);
+      }
+    });
+  </script>
+</head>
+<body>
+<div class="layout">
+$if(toc)$
+<nav class="sidebar" id="sidebar">
+  <div class="toc-header">
+    <span class="toc-header-text">$if(toc-title)$$toc-title$$else$Contents$endif$</span>
+    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">◀</button>
+  </div>
+  $table-of-contents$
+</nav>
+<div class="sidebar-resize" id="sidebarResize"></div>
+$endif$
+<main class="content">
+$for(include-before)$
+$include-before$
+$endfor$
+$if(title)$
+<header class="doc-header">
+  <h1 class="doc-title$if(subtitle)$ doc-title--sub$endif$">$title$</h1>
+$if(subtitle)$
+  <p class="doc-subtitle">$subtitle$</p>
+$endif$
+$for(author)$
+  <p class="doc-author">$author$</p>
+$endfor$
+$if(date)$
+  <p class="doc-date">$date$</p>
+$endif$
+</header>
+$endif$
+$body$
+$for(include-after)$
+$include-after$
+$endfor$
+</main>
+</div>
+<script>
+(function() {
+  var sidebar = document.getElementById('sidebar');
+  var toggle  = document.getElementById('sidebarToggle');
+  var handle  = document.getElementById('sidebarResize');
+  if (!sidebar) return;
+
+  // Toggle collapse
+  toggle.addEventListener('click', function() {
+    sidebar.classList.toggle('collapsed');
+    toggle.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+  });
+
+  // Drag to resize
+  if (!handle) return;
+  var dragging = false;
+  handle.addEventListener('mousedown', function(e) {
+    dragging = true;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var w = Math.max(160, Math.min(600, e.clientX));
+    document.documentElement.style.setProperty('--sidebar-w', w + 'px');
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+</script>
+</body>
+</html>
