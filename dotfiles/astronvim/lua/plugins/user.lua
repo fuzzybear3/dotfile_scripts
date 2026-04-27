@@ -76,6 +76,19 @@ return {
     },
   },
 
+  {
+    "selimacerbas/markdown-preview.nvim",
+    dependencies = { "selimacerbas/live-server.nvim" },
+    config = function()
+      require("markdown_preview").setup({
+        instance_mode = "takeover",
+        port = 0,
+        open_browser = true,
+        debounce_ms = 300,
+      })
+    end,
+  },
+
   -- You can disable default plugins as follows:
   { "max397574/better-escape.nvim", enabled = false },
 
@@ -84,6 +97,14 @@ return {
     opts = {
       options = {
         opt = { spell = true },
+      },
+      mappings = {
+        n = {
+          ["<Leader>m"] = { desc = "Markdown" },
+          ["<Leader>mp"] = { function() require("markdown_preview").start() end, desc = "Preview start" },
+          ["<Leader>ms"] = { function() require("markdown_preview").stop() end, desc = "Preview stop" },
+          ["<Leader>mr"] = { function() require("markdown_preview").refresh() end, desc = "Preview refresh" },
+        },
       },
     },
   },
