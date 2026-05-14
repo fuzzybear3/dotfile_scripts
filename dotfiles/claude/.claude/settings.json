@@ -1,0 +1,21 @@
+{
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "effortLevel": "xhigh",
+  "theme": "dark-daltonized",
+  "model": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/stevenguido/.claude/statusline-command.sh"
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(gh search:*)",
+      "Bash(wl-copy)",
+      "Bash(wl-paste)",
+      "Bash(wl-paste --list-types)"
+    ]
+  }
+}
