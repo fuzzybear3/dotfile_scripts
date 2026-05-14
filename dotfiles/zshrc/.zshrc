@@ -155,7 +155,7 @@ alias make-docs-all='python3 $HOME/dotfile_scripts/utils/make_docs.py all'
 # Set to 1 to alias modern tools over classic commands
 USE_MODERN_TOOLS=1
 
-if [[ "$USE_MODERN_TOOLS" == "1" ]]; then
+if [[ "$USE_MODERN_TOOLS" == "1" && -o interactive ]]; then
     command -v exa  &>/dev/null && alias ls='exa' ll='exa -l' la='exa -la' lt='exa --tree'
     # command -v bat  &>/dev/null && alias cat='bat'
     # command -v fd   &>/dev/null && alias find='fd'
