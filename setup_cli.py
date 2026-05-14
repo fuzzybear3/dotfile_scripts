@@ -25,15 +25,27 @@ def run(command: str, error_message: str = None, dry_run: bool = False, password
             sys.exit(1)
         return
 
-    if password and command.startswith("sudo"):
-        command = f"echo {password} | sudo -S {command}"
+    # If sudo is involved, use -S to read the password from stdin instead of
+    # 'echo PASS | sudo -S ...' — the old form briefly exposes the password in
+    # the process list (visible via `ps`).
+    stdin_input = None
+    if password and "sudo " in command:
+        command = command.replace("sudo ", "sudo -S ")
+        stdin_input = password + '\n'
 
     # Stream stdout+stderr in real-time so long-running commands show progress
     process = subprocess.Popen(
         command, shell=True, text=True,
+        stdin=subprocess.PIPE if stdin_input else None,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         cwd=dir_path
     )
+    if stdin_input:
+        try:
+            process.stdin.write(stdin_input)
+            process.stdin.close()
+        except BrokenPipeError:
+            pass
     for line in process.stdout:
         print(line, end="", flush=True)
     process.wait()
@@ -47,6 +59,14 @@ def is_command_available(command: str) -> bool:
     """Checks if a command is available in the system's PATH."""
     # Using 'command -v' is more portable than 'type' for checking command existence
     return subprocess.call(f"command -v {command}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+
+def is_apt_package_installed(package: str) -> bool:
+    """Checks whether an apt package is installed (works for packages that don't provide a same-named binary)."""
+    result = subprocess.run(
+        f"dpkg-query -W -f='${{Status}}' {package} 2>/dev/null",
+        shell=True, capture_output=True, text=True
+    )
+    return result.returncode == 0 and "install ok installed" in result.stdout
 
 def install_rust(dry_run: bool = False, password: str = None):
     """Installs Rust using rustup if not already installed."""
@@ -381,6 +401,20 @@ def install_nerd_font(dry_run: bool = False, password: str = None):
     run("fc-cache -fv", error_message="Failed to update font cache.", dry_run=dry_run)
     print("MesloLGS NF font installation commands issued.")
 
+def ensure_veth_module(dry_run: bool = False, password: str = None):
+    """Loads the 'veth' kernel module and persists it across reboots.
+
+    Without this, 'docker run' can fail with:
+      failed to create endpoint ... veth pair ... operation not supported
+    Some kernels don't autoload veth on demand; docker-ce's Debian packages
+    don't ship a modules-load.d entry. So we ensure it ourselves.
+    """
+    print("--- Ensuring 'veth' kernel module is loaded ---")
+    run("sudo modprobe veth",
+        error_message="Failed to load veth kernel module.", dry_run=dry_run, password=password)
+    run("sudo bash -c 'echo veth > /etc/modules-load.d/veth.conf'",
+        error_message="Failed to persist veth module load.", dry_run=dry_run, password=password)
+
 def install_docker(dry_run: bool = False, password: str = None):
     """Installs Docker using the convenience script and sets up user permissions."""
     print("--- Installing Docker ---")
@@ -388,6 +422,16 @@ def install_docker(dry_run: bool = False, password: str = None):
     # Check if Docker is already installed by looking for 'docker' command
     if is_command_available("docker"):
         print("Docker is already installed.")
+        # Daemon reachability check — 'installed' doesn't mean 'working'.
+        if not dry_run:
+            result = subprocess.run("docker info", shell=True, capture_output=True, text=True, timeout=15)
+            if result.returncode != 0:
+                print("Warning: 'docker info' failed — daemon may not be reachable.")
+                print("  Common causes: user not yet in 'docker' group (logout/login needed),")
+                print("  daemon not running, or kernel module 'veth' not loaded.")
+                stderr = (result.stderr or result.stdout or "").strip()
+                if stderr:
+                    print(f"  Output: {stderr[:300]}")
         # Check if current user is in the docker group
         try:
             subprocess.run("groups | grep -q docker", shell=True, check=True, text=True, capture_output=True)
@@ -401,6 +445,7 @@ def install_docker(dry_run: bool = False, password: str = None):
                 print("For this change to take full effect, you MUST log out of your current session")
                 print("and log back in. You will not be able to run docker commands without sudo until then.")
                 print("------------------------------------------------------------")
+        ensure_veth_module(dry_run=dry_run, password=password)
         return
 
     print("Downloading and executing Docker convenience script...")
@@ -410,6 +455,8 @@ def install_docker(dry_run: bool = False, password: str = None):
     run("sudo sh /tmp/get-docker.sh",
         error_message="Failed to execute Docker convenience script.", dry_run=dry_run, password=password)
     run("rm /tmp/get-docker.sh", error_message="Failed to remove Docker convenience script.", dry_run=dry_run)
+
+    ensure_veth_module(dry_run=dry_run, password=password)
 
     # Add the current user to the 'docker' group
     print("Adding current user to the 'docker' group...")
@@ -483,6 +530,37 @@ def install_pandoc(dry_run: bool = False, password: str = None):
     print(f"Pandoc {version} installed to {bin_dir}/pandoc.")
 
 
+def install_tailscale(dry_run: bool = False, password: str = None):
+    """Installs Tailscale via the official install script."""
+    print("--- Installing Tailscale ---")
+    if is_command_available("tailscale"):
+        print("Tailscale is already installed.")
+        return
+
+    print("Downloading and executing Tailscale install script...")
+    run("curl -fsSL https://tailscale.com/install.sh | sh",
+        error_message="Failed to install Tailscale.", dry_run=dry_run, password=password)
+    print("Tailscale installation command issued.")
+    if not dry_run:
+        print("\n------------------------------------------------------------")
+        print("Tailscale installed. Run 'sudo tailscale up' to authenticate")
+        print("and join your tailnet.")
+        print("------------------------------------------------------------")
+
+
+def install_direnv(dry_run: bool = False, password: str = None):
+    """Installs direnv via apt."""
+    print("--- Installing direnv ---")
+    if is_command_available("direnv"):
+        print("direnv is already installed.")
+        return
+
+    print("Installing direnv...")
+    run("sudo apt update && sudo apt install -y direnv",
+        error_message="Failed to install direnv.", dry_run=dry_run, password=password)
+    print("direnv installation command issued.")
+
+
 def install_utility_programs(dry_run: bool = False, password: str = None):
 
     cargo_programs = {
@@ -498,13 +576,17 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "alacritty": "alacritty",
         "zoxide": "zoxide",
     }
+    # Source cargo env so 'cargo' is found even if the user's shell rc files
+    # haven't been re-sourced since install_rust ran in this same script.
+    cargo_env_file = os.path.expanduser("~/.cargo/env")
+    cargo_env_prefix = f'. "{cargo_env_file}" && ' if (dry_run or os.path.exists(cargo_env_file)) else ""
     for package, command in cargo_programs.items():
         print(f"--- Installing {package} via cargo ---")
         if is_command_available(command):
             print(f"{package} (command: {command}) is already installed.")
         else:
             print(f"Installing {package}...")
-            run(f"cargo install {package}",
+            run(cargo_env_prefix + f"cargo install {package}",
                 error_message=f"Failed to install {package} via cargo.", dry_run=dry_run)
             print(f"{package} installation command issued.")
 
@@ -521,12 +603,20 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         ]
 
     print("--- Installing utility programs via apt ---")
-    for program in apt_programs:
-        if is_command_available(program):
-            print(f"{program} is already installed.")
-        else:
+    # Detect via dpkg, not command-name: several of these don't provide a
+    # same-named binary (python3-venv has no command; wl-clipboard ships wl-copy).
+    to_install = [p for p in apt_programs if not is_apt_package_installed(p)]
+    for p in apt_programs:
+        if p not in to_install:
+            print(f"{p} is already installed.")
+
+    if to_install:
+        print("Updating apt cache...")
+        run("sudo apt update",
+            error_message="Failed to update apt cache.", dry_run=dry_run, password=password)
+        for program in to_install:
             print(f"Installing {program}...")
-            run(f"sudo apt update && sudo apt install -y {program}",
+            run(f"sudo apt install -y {program}",
                 error_message=f"Failed to install {program} via apt.", dry_run=dry_run, password=password)
             print(f"{program} installation command issued.")
     
@@ -614,6 +704,8 @@ if __name__ == "__main__":
         ("Install Neovim",            lambda: install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password)),
         ("Set up dotfiles",           lambda: setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password)),
         ("Install Nerd Font",         lambda: install_nerd_font(dry_run=args.dry_run, password=user_password)),
+        ("Install direnv",             lambda: install_direnv(dry_run=args.dry_run, password=user_password)),
+        ("Install Tailscale",         lambda: install_tailscale(dry_run=args.dry_run, password=user_password)),
         ("Install utility programs",  lambda: install_utility_programs(dry_run=args.dry_run, password=user_password)),
         ("Install Docker",            lambda: install_docker(dry_run=args.dry_run, password=user_password)),
         ("Install Anki",              lambda: install_anki(dry_run=args.dry_run, password=user_password)),
