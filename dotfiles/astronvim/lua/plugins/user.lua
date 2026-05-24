@@ -85,6 +85,7 @@ return {
         port = 0,
         open_browser = true,
         debounce_ms = 300,
+        mermaid_elk = true,
       })
     end,
   },
