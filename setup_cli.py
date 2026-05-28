@@ -575,6 +575,7 @@ def install_utility_programs(dry_run: bool = False, password: str = None):
         "difftastic": "difft",
         "alacritty": "alacritty",
         "zoxide": "zoxide",
+        "caligula": "caligula",
     }
     # Source cargo env so 'cargo' is found even if the user's shell rc files
     # haven't been re-sourced since install_rust ran in this same script.
