@@ -18,10 +18,10 @@ cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 tok_used=$(echo "$input" | jq -r '.context_window.total_input_tokens // empty')
 tok_limit=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 five_hour_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+five_hour_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 
-# cwd  (blue 81) — collapse $HOME to ~
-display_cwd=$(echo "$cwd" | sed "s|^$HOME|~|")
-printf "\033[38;5;81m%s\033[0m" "$display_cwd"
+# cwd basename (blue 81) — show just the leaf directory
+printf "\033[38;5;81m%s\033[0m" "$(basename "$cwd")"
 
 # git branch (grey 242) — skip optional locks
 if git_dir=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" rev-parse --git-dir 2>/dev/null); then
@@ -33,29 +33,45 @@ if git_dir=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" rev-parse --git-dir 2>/dev/null)
   printf "  \033[38;5;242m%s%s\033[0m" "$branch" "$dirty_mark"
 fi
 
-# model (grey 242)
-printf "  \033[38;5;242m%s\033[0m" "$model"
+# Pick ansi color by percentage threshold:
+#   < 60  green 84
+#   < 85  yellow 228
+#   >=85  red 203
+threshold_color() {
+  awk -v p="$1" 'BEGIN {
+    if (p < 60)      print 84
+    else if (p < 85) print 228
+    else             print 203
+  }'
+}
 
-# context used % (yellow 228) — only when available
-if [ -n "$used" ]; then
-  printf "  \033[38;5;228mctx:%s%%\033[0m" "$(printf '%.0f' "$used")"
+# context used % + token count — combined into one block
+if [ -n "$used" ] || [ -n "$tok_used" ]; then
+  printf "  "
+  if [ -n "$used" ]; then
+    ctx_color=$(threshold_color "$used")
+    printf "\033[38;5;%dmctx:%s%%\033[0m" "$ctx_color" "$(printf '%.0f' "$used")"
+  fi
+  if [ -n "$tok_used" ]; then
+    fmt_k() { awk -v n="$1" 'BEGIN { printf "%dk", int(n/1000 + 0.5) }'; }
+    [ -n "$used" ] && printf " "
+    printf "\033[38;5;123m%s/%s\033[0m" "$(fmt_k "$tok_used")" "$(fmt_k "$tok_limit")"
+  fi
 fi
 
-# token count  (cyan 123) — only when token data is available
-if [ -n "$tok_used" ]; then
-  fmt_k() { awk -v n="$1" 'BEGIN { printf "%dk", int(n/1000 + 0.5) }'; }
-  printf "  \033[38;5;123m%s/%s\033[0m" "$(fmt_k "$tok_used")" "$(fmt_k "$tok_limit")"
-fi
-
-# 5-hour rolling rate limit (yellow 228) — only present for Pro/Max subscribers after first API response
+# 5-hour rolling rate limit — only present for Pro/Max subscribers after first API response
 if [ -n "$five_hour_pct" ]; then
-  printf "  \033[38;5;228m5h:%s%%\033[0m" "$(printf '%.0f' "$five_hour_pct")"
+  five_color=$(threshold_color "$five_hour_pct")
+  printf "  \033[38;5;%dm5h:%s%%\033[0m" "$five_color" "$(printf '%.0f' "$five_hour_pct")"
+  if [ -n "$five_hour_reset" ]; then
+    printf "\033[38;5;%dm→%s\033[0m" "$five_color" "$(date -d "@$five_hour_reset" +%H:%M)"
+  fi
 fi
 
-# session cost (green 84) — only when available
+# session cost (green 84) — only when available; resets per session, not per 5h window
 if [ -n "$cost" ]; then
   printf "  \033[38;5;84m\$%s\033[0m" "$(printf '%.2f' "$cost")"
 fi
 
-# time (grey 242)
-printf "  \033[38;5;242m%s\033[0m" "$(date +%H:%M:%S)"
+# model (grey 242) — last since it's the lowest-priority info
+printf "  \033[38;5;242m%s\033[0m" "$model"
