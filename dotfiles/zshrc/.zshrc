@@ -130,6 +130,9 @@ export SUDO_EDITOR="$HOME/software/nvim"
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 export PATH="$HOME/software:$PATH"
 
+# Go toolchain (installed to ~/software/go) and 'go install' binaries (~/go/bin)
+export PATH="$HOME/software/go/bin:$HOME/go/bin:$PATH"
+
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 

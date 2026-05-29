@@ -530,6 +530,65 @@ def install_pandoc(dry_run: bool = False, password: str = None):
     print(f"Pandoc {version} installed to {bin_dir}/pandoc.")
 
 
+def install_go(dry_run: bool = False, password: str = None):
+    """Installs the latest Go toolchain into ~/software/go (no sudo needed).
+
+    The official tarball extracts to a 'go/' dir and the binary auto-detects
+    GOROOT from its own location, so a user-local install just works as long as
+    ~/software/go/bin is on PATH (handled in .zshrc).
+    """
+    print("--- Installing Go ---")
+
+    software_dir = os.path.expanduser("~/software")
+    go_dir = os.path.join(software_dir, "go")
+    go_bin = os.path.join(go_dir, "bin", "go")
+
+    if os.path.exists(go_bin) and os.access(go_bin, os.X_OK):
+        print("Go is already installed in ~/software/go.")
+        return
+
+    print("Fetching latest Go version from go.dev...")
+    if dry_run:
+        version = "DRY_RUN_VERSION"
+        print("[Dry Run] Would fetch latest version from https://go.dev/VERSION?m=text")
+    else:
+        req = urllib.request.Request(
+            "https://go.dev/VERSION?m=text",
+            headers={"User-Agent": "setup_cli.py"}
+        )
+        with urllib.request.urlopen(req) as resp:
+            # The endpoint returns the version on the first line (e.g. "go1.22.3"),
+            # followed by a build timestamp line we don't need.
+            version = resp.read().decode().splitlines()[0].strip()
+    print(f"Latest Go version: {version}")
+
+    run(f"mkdir -p {software_dir}", dry_run=dry_run)
+
+    # version already includes the "go" prefix (e.g. "go1.22.3"), so the tarball
+    # is "go1.22.3.linux-amd64.tar.gz". Assumes x86_64, like the other installers.
+    tarball = f"{version}.linux-amd64.tar.gz"
+    download_url = f"https://go.dev/dl/{tarball}"
+    tarball_path = os.path.join(software_dir, tarball)
+
+    print(f"Downloading {tarball}...")
+    run(f"curl -L {download_url} -o {tarball_path}",
+        error_message="Failed to download Go.", dry_run=dry_run)
+
+    # Remove any stale install first so the tarball extracts cleanly — matches
+    # the official 'rm -rf /usr/local/go' guidance.
+    print("Extracting Go...")
+    run(f"rm -rf {go_dir}", dry_run=dry_run)
+    run(f"tar -xzf {tarball_path} -C {software_dir}",
+        error_message="Failed to extract Go.", dry_run=dry_run)
+
+    print("Cleaning up...")
+    run(f"rm -f {tarball_path}",
+        error_message="Failed to clean up Go tarball.", dry_run=dry_run)
+
+    print(f"Go {version} installed to {go_dir}.")
+    print("  Toolchain on PATH via ~/software/go/bin; 'go install' binaries via ~/go/bin (set in .zshrc).")
+
+
 def install_tailscale(dry_run: bool = False, password: str = None):
     """Installs Tailscale via the official install script."""
     print("--- Installing Tailscale ---")
@@ -701,6 +760,7 @@ if __name__ == "__main__":
         ("Install Oh My Zsh plugins", lambda: install_oh_my_zsh_plugins(dry_run=args.dry_run, password=user_password)),
         ("Install fzf",               lambda: install_fzf(dry_run=args.dry_run, password=user_password)),
         ("Install NVM and Node.js",   lambda: install_nvm_and_node(dry_run=args.dry_run, password=user_password)),
+        ("Install Go",                lambda: install_go(dry_run=args.dry_run, password=user_password)),
         ("Install Powerlevel10k",     lambda: install_powerlevel10k(dry_run=args.dry_run, password=user_password)),
         ("Install Neovim",            lambda: install_nvim_and_astronvim(dry_run=args.dry_run, password=user_password)),
         ("Set up dotfiles",           lambda: setup_dotfiles_with_stow(dry_run=args.dry_run, password=user_password)),
