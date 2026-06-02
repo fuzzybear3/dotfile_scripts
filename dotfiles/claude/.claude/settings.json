@@ -9,6 +9,7 @@
       "Bash(wl-paste --list-types)"
     ]
   },
+  "model": "opus",
   "statusLine": {
     "type": "command",
     "command": "bash /home/stevenguido/.claude/statusline-command.sh"
@@ -19,5 +20,21 @@
   "effortLevel": "xhigh",
   "theme": "dark-daltonized",
   "skipAutoPermissionPrompt": true,
-  "model": "opus"
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "bash /home/stevenguido/.claude/card-hook.sh turnstart" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "bash /home/stevenguido/.claude/card-hook.sh stop" } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "bash /home/stevenguido/.claude/card-hook.sh error" } ] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [ { "type": "command", "command": "bash /home/stevenguido/.claude/card-hook.sh permission" } ] }
+    ],
+    "Notification": [
+      { "matcher": "idle_prompt", "hooks": [ { "type": "command", "command": "bash /home/stevenguido/.claude/card-hook.sh idle" } ] }
+    ]
+  }
 }
