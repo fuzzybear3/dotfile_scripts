@@ -1,0 +1,36 @@
+---
+# install_go
+- name: Ensure software dir exists
+  ansible.builtin.file:
+    path: "{{ software_dir }}"
+    state: directory
+
+- name: Fetch latest Go version string
+  ansible.builtin.uri:
+    url: https://go.dev/VERSION?m=text
+    return_content: true
+  register: go_version_response
+
+- name: Set Go version fact
+  ansible.builtin.set_fact:
+    # endpoint returns "go1.x.y" on line 1, a timestamp on line 2
+    go_version: "{{ go_version_response.content.splitlines()[0] | trim }}"
+
+- name: Read installed Go version (if any)
+  ansible.builtin.command: "{{ software_dir }}/go/bin/go version"
+  register: go_installed
+  changed_when: false
+  failed_when: false
+
+- name: Remove stale Go install before re-extracting
+  ansible.builtin.file:
+    path: "{{ software_dir }}/go"
+    state: absent
+  when: go_version not in (go_installed.stdout | default(''))
+
+- name: Download and extract Go
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/{{ go_version }}.linux-amd64.tar.gz"
+    dest: "{{ software_dir }}"
+    remote_src: true
+  when: go_version not in (go_installed.stdout | default(''))

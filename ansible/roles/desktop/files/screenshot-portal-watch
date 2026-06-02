@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Follow the COSMIC portal's journal and bounce it when it logs an
+# output-desync or crash-recovery signature, so screenshots keep working.
+#
+# Signatures (from observed failures, see pop-cosmic-portal-respawn-bug notes):
+#   "dead wl_output"                       output churn left the portal desynced
+#   "Screenshot outputs: []"               respawned without re-enumerating
+#   "Screenshot output count mismatch"     same class, count form
+#   "Error trying to flush the wayland display" / "SCTK dispatch error"
+#                                          event-loop death that precedes a SEGV
+#
+# Restarts are debounced so a burst of warnings collapses into a single bounce
+# (real failures are rare and bursty: ~one cluster per week in practice).
+set -uo pipefail
+
+DEBOUNCE=${SCREENSHOT_PORTAL_DEBOUNCE:-30}
+REPAIR="${HOME}/.local/bin/screenshot-portal-repair"
+last=0
+
+# -n0: start at the journal tail, ignore historical lines on startup.
+journalctl --user -f -n0 -t xdg-desktop-portal-cosmic 2>/dev/null |
+while IFS= read -r line; do
+  case "$line" in
+  *"dead wl_output"* | \
+    *"Screenshot outputs: []"* | \
+    *"Screenshot output count mismatch"* | \
+    *"Error trying to flush the wayland display"* | \
+    *"SCTK dispatch error"*)
+    now=$(date +%s)
+    if [ $((now - last)) -ge "$DEBOUNCE" ]; then
+      last=$now
+      "$REPAIR"
+    fi
+    ;;
+  esac
+done

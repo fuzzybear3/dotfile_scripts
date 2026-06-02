@@ -1,0 +1,35 @@
+---
+# install_docker (+ ensure_veth_module)
+- name: Check whether docker is installed
+  ansible.builtin.shell: command -v docker
+  register: docker_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Docker via the convenience script
+  ansible.builtin.shell: curl -fsSL https://get.docker.com | sh
+  become: true
+  when: docker_check.rc != 0
+
+- name: Ensure the veth kernel module is loaded
+  community.general.modprobe:
+    name: veth
+    state: present
+  become: true
+
+- name: Persist veth module across reboots
+  ansible.builtin.copy:
+    content: "veth\n"
+    dest: /etc/modules-load.d/veth.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+- name: Add the current user to the docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: true
+  become: true
+  # NOTE: log out / back in for group membership to take effect.

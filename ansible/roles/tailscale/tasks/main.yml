@@ -1,0 +1,9 @@
+---
+# install_tailscale
+- name: Install Tailscale via the official script
+  ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+  become: true   # the script needs root to add the apt repo + package
+
+# Reminder, not automated: run `sudo tailscale up` to authenticate.

@@ -1,0 +1,27 @@
+---
+- name: Bootstrap workstation
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  # Mirrors what the .zshrc puts on PATH so cargo/go/local binaries resolve
+  # during this run, before any shell has been re-sourced.
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.cargo/bin:{{ ansible_env.HOME }}/software/go/bin:{{ ansible_env.HOME }}/.local/bin:{{ ansible_env.PATH }}"
+
+  # Order matters: rust must precede cli_tools (cargo installs), git/stow
+  # before dotfiles. This list is the equivalent of the `steps` array in
+  # setup_cli.py. Run a subset with e.g. `--tags docker`.
+  roles:
+    - { role: rust,      tags: [rust] }
+    - { role: zsh,       tags: [zsh, shell] }
+    - { role: node,      tags: [node] }
+    - { role: golang,    tags: [go] }
+    - { role: neovim,    tags: [neovim, nvim] }
+    - { role: dotfiles,  tags: [dotfiles, stow] }
+    - { role: fonts,     tags: [fonts] }
+    - { role: tailscale, tags: [tailscale] }
+    - { role: cli_tools, tags: [cli, utils] }
+    - { role: docker,    tags: [docker] }
+    - { role: pandoc,    tags: [pandoc] }
+    - { role: desktop,   tags: [desktop, alacritty, anki] }

@@ -1,0 +1,46 @@
+---
+# install_pandoc
+- name: Check whether pandoc is installed
+  ansible.builtin.shell: command -v pandoc
+  register: pandoc_check
+  changed_when: false
+  failed_when: false
+
+- name: Install pandoc from the latest GitHub release
+  when: pandoc_check.rc != 0
+  block:
+    - name: Ensure target dirs exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ software_dir }}"
+        - "{{ local_bin }}"
+
+    - name: Fetch latest pandoc release metadata
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/jgm/pandoc/releases/latest
+        return_content: true
+      register: pandoc_release
+
+    - name: Set pandoc version fact
+      ansible.builtin.set_fact:
+        pandoc_version: "{{ pandoc_release.json.tag_name }}"
+
+    - name: Download and extract pandoc
+      ansible.builtin.unarchive:
+        src: "https://github.com/jgm/pandoc/releases/download/{{ pandoc_version }}/pandoc-{{ pandoc_version }}-linux-amd64.tar.gz"
+        dest: "{{ software_dir }}"
+        remote_src: true
+
+    - name: Install pandoc binary into ~/.local/bin
+      ansible.builtin.copy:
+        src: "{{ software_dir }}/pandoc-{{ pandoc_version }}/bin/pandoc"
+        dest: "{{ local_bin }}/pandoc"
+        mode: "0755"
+        remote_src: true
+
+    - name: Clean up the extracted pandoc dir
+      ansible.builtin.file:
+        path: "{{ software_dir }}/pandoc-{{ pandoc_version }}"
+        state: absent

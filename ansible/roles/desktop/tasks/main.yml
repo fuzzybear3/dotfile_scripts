@@ -1,0 +1,88 @@
+---
+# install_anki + install_alacritty_desktop + set_default_terminal_alacritty
+- name: Ensure the flathub remote is configured
+  community.general.flatpak_remote:
+    name: flathub
+    flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+    state: present
+    method: user
+
+- name: Install Anki
+  community.general.flatpak:
+    name: net.ankiweb.Anki
+    remote: flathub
+    method: user
+    state: present
+
+- name: Ensure desktop-integration dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ ansible_env.HOME }}/.local/share/applications"
+    - "{{ ansible_env.HOME }}/.local/share/icons/hicolor/scalable/apps"
+    - "{{ ansible_env.HOME }}/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1"
+
+- name: Download the Alacritty .desktop file
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/alacritty/alacritty/master/extra/linux/Alacritty.desktop
+    dest: "{{ ansible_env.HOME }}/.local/share/applications/Alacritty.desktop"
+    force: false
+
+- name: Download the Alacritty icon
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/alacritty/alacritty/master/extra/logo/alacritty-term.svg
+    dest: "{{ ansible_env.HOME }}/.local/share/icons/hicolor/scalable/apps/Alacritty.svg"
+    force: false
+
+- name: Update the desktop database
+  ansible.builtin.command: update-desktop-database {{ ansible_env.HOME }}/.local/share/applications
+  changed_when: false
+
+- name: Set Alacritty as the COSMIC default terminal
+  ansible.builtin.copy:
+    dest: "{{ ansible_env.HOME }}/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions"
+    content: |
+      {
+          Terminal: "alacritty",
+      }
+
+# --- self-healing COSMIC screenshot portal -------------------------------
+# xdg-desktop-portal-cosmic desyncs from the compositor's output list after
+# output churn/crash, silently breaking screenshot-to-clipboard. A user service
+# watches the journal for the failure signatures and bounces the portal.
+- name: Ensure ~/.local/bin exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install screenshot-portal repair + watch scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ ansible_env.HOME }}/.local/bin/{{ item }}"
+    mode: "0755"
+  loop:
+    - screenshot-portal-repair
+    - screenshot-portal-watch
+
+- name: Ensure systemd user unit dir exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.config/systemd/user"
+    state: directory
+    mode: "0755"
+
+- name: Install screenshot-portal-watch user service
+  ansible.builtin.copy:
+    src: screenshot-portal-watch.service
+    dest: "{{ ansible_env.HOME }}/.config/systemd/user/screenshot-portal-watch.service"
+    mode: "0644"
+  register: portal_watch_unit
+
+- name: Enable + (re)start screenshot-portal-watch
+  ansible.builtin.systemd:
+    name: screenshot-portal-watch.service
+    scope: user
+    enabled: true
+    state: "{{ 'restarted' if portal_watch_unit.changed else 'started' }}"
+    daemon_reload: true

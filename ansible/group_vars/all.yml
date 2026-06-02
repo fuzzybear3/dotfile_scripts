@@ -1,0 +1,64 @@
+---
+# ----------------------------------------------------------------------------
+# Central config. In setup_cli.py these values were scattered as literals
+# inside each function; here they're declarative and live in one place.
+# ----------------------------------------------------------------------------
+
+# Install locations
+software_dir: "{{ ansible_env.HOME }}/software"
+local_bin: "{{ ansible_env.HOME }}/.local/bin"
+# This ansible/ dir lives inside the repo, so dotfiles/ is one level up.
+dotfiles_dir: "{{ playbook_dir }}/../dotfiles"
+
+# Pinned versions
+nvm_version: v0.39.7
+
+# Rust toolchain components (setup_rust_dev)
+rustup_components:
+  - rust-analyzer
+  - clippy
+  - rustfmt
+
+# Oh My Zsh plugins (install_oh_my_zsh_plugins)
+omz_plugins:
+  - name: zsh-syntax-highlighting
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+  - name: zsh-autosuggestions
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+  - name: zsh-vi-mode
+    repo: https://github.com/jeffreytse/zsh-vi-mode.git
+
+# CLI tools installed via cargo (install_utility_programs)
+cargo_packages:
+  - exa
+  - bottom
+  - watchexec-cli
+  - bat
+  - fd-find
+  - ripgrep
+  - tree-sitter-cli
+  - trunk
+  - difftastic
+  - alacritty
+  - zoxide
+  - caligula
+
+# Utilities installed via apt (install_direnv + install_utility_programs)
+apt_packages:
+  - direnv
+  - wl-clipboard
+  - cmatrix
+  - neofetch
+  - htop
+  - tree
+  - python3-pip
+  - python3-venv
+
+# Nerd font (install_nerd_font)
+nerd_font_dir: "{{ ansible_env.HOME }}/.local/share/fonts/MesloLGS NF"
+nerd_font_base: https://github.com/romkatv/powerlevel10k-media/raw/master
+nerd_font_files:
+  - MesloLGS NF Regular.ttf
+  - MesloLGS NF Bold.ttf
+  - MesloLGS NF Italic.ttf
+  - MesloLGS NF Bold Italic.ttf

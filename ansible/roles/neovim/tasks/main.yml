@@ -1,0 +1,19 @@
+---
+# install_nvim_and_astronvim
+- name: Install git
+  ansible.builtin.apt:
+    name: git
+    state: present
+  become: true
+
+- name: Ensure software dir exists
+  ansible.builtin.file:
+    path: "{{ software_dir }}"
+    state: directory
+
+- name: Download Neovim AppImage
+  ansible.builtin.get_url:
+    url: https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+    dest: "{{ software_dir }}/nvim"
+    mode: "0755"
+    force: false        # don't re-pull if it's already there

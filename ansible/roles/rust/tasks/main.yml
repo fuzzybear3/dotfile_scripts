@@ -1,0 +1,22 @@
+---
+# install_rust + setup_rust_dev
+- name: Install rustup and the stable toolchain
+  ansible.builtin.shell: >
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  args:
+    # The `creates:` guard is Ansible's equivalent of your
+    # `is_command_available("rustc")` check — skips if already installed.
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+
+- name: Add rustup components
+  ansible.builtin.command: "rustup component add {{ item }}"
+  loop: "{{ rustup_components }}"
+  register: rustup_component
+  changed_when: >-
+    'up to date' not in (rustup_component.stderr | default(''))
+    and 'up to date' not in (rustup_component.stdout | default(''))
+
+- name: Install cargo-watch
+  community.general.cargo:
+    name: cargo-watch
+    state: present

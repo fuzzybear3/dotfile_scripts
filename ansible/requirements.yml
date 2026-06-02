@@ -1,0 +1,6 @@
+---
+# Modules used here that aren't in ansible.builtin:
+#   community.general.cargo, .flatpak, .flatpak_remote, .modprobe
+# Install with: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: community.general

@@ -1,0 +1,16 @@
+---
+# install_direnv + install_utility_programs
+- name: Install apt utilities
+  # One task installs the whole list (vs. your per-package loop). apt detects
+  # already-installed packages itself — no dpkg-query helper needed.
+  ansible.builtin.apt:
+    name: "{{ apt_packages }}"
+    state: present
+    update_cache: true
+  become: true
+
+- name: Install cargo CLI tools
+  community.general.cargo:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ cargo_packages }}"

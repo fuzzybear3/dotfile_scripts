@@ -1,0 +1,14 @@
+[Unit]
+Description=Auto-repair COSMIC screenshot portal on output-desync/crash
+Documentation=https://github.com/pop-os/cosmic-session/issues/185
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/screenshot-portal-watch
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

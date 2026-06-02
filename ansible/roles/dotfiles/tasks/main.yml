@@ -1,0 +1,35 @@
+---
+# setup_dotfiles_with_stow (+ install_stow)
+- name: Install GNU Stow
+  ansible.builtin.apt:
+    name: stow
+    state: present
+  become: true
+
+- name: Ensure stow target dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ ansible_env.HOME }}/.config/nvim"
+    - "{{ ansible_env.HOME }}/.config/alacritty"
+
+- name: Stow packages into $HOME
+  ansible.builtin.command:
+    cmd: "stow -R -v -t {{ ansible_env.HOME }} {{ item }}"
+    chdir: "{{ dotfiles_dir }}"
+  loop:
+    - p10k
+    - zshrc
+    - git
+    - alacritty
+  register: stow_home
+  # stow -v prints LINK/UNLINK lines to stderr only when it actually changes links.
+  changed_when: "'LINK' in stow_home.stderr or 'UNLINK' in stow_home.stderr"
+
+- name: Stow AstroNvim into ~/.config/nvim
+  ansible.builtin.command:
+    cmd: "stow -R -v -t {{ ansible_env.HOME }}/.config/nvim astronvim"
+    chdir: "{{ dotfiles_dir }}"
+  register: stow_nvim
+  changed_when: "'LINK' in stow_nvim.stderr or 'UNLINK' in stow_nvim.stderr"

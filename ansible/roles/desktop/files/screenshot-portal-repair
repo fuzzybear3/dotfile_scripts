@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Restart xdg-desktop-portal-cosmic so it re-enumerates Wayland outputs.
+#
+# The COSMIC screenshot shortcut delivers images to the clipboard only through
+# this portal. After output churn (monitor hotplug, DPMS, suspend) or a crash,
+# the portal can stay alive but desynced from the compositor's output list, so
+# screenshots capture nothing and silently fail to reach the clipboard. Stopping
+# the unit lets dbus re-activate a fresh instance on the next screenshot.
+#
+# Safe to run anytime; also handy by hand when screenshots stop pasting.
+set -uo pipefail
+
+# The unit's dbus-name prefix (:1.N) and @instance both vary, so glob them.
+units=$(systemctl --user list-units --plain --no-legend \
+  'dbus-*portal.desktop.cosmic@*.service' 2>/dev/null | awk '{print $1}')
+
+if [ -z "$units" ]; then
+  logger -t screenshot-portal-repair "no cosmic portal instance running; nothing to restart"
+  exit 0
+fi
+
+# shellcheck disable=SC2086  # word-splitting is intentional: one unit per arg.
+systemctl --user stop $units
+logger -t screenshot-portal-repair "restarted cosmic portal ($units) to recover screenshots"

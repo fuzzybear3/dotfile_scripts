@@ -1,0 +1,13 @@
+---
+# install_nerd_font
+- name: Ensure font directory exists
+  ansible.builtin.file:
+    path: "{{ nerd_font_dir }}"
+    state: directory
+
+- name: Download MesloLGS NF fonts
+  ansible.builtin.get_url:
+    url: "{{ nerd_font_base }}/{{ item | urlencode }}"   # encodes the spaces
+    dest: "{{ nerd_font_dir }}/{{ item }}"
+  loop: "{{ nerd_font_files }}"
+  notify: Refresh font cache   # only fires fc-cache if something downloaded
