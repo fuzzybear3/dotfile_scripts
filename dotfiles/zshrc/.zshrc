@@ -46,8 +46,9 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Uncomment the following line to disable colors in ls.
 # DISABLE_LS_COLORS="true"
 
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+# Disabled so the custom tty-in-title hook at the bottom of this file owns the
+# window title (used by the cosmic-applet-claude-sessions panel applet).
+DISABLE_AUTO_TITLE="true"
 
 # Uncomment the following line to enable command auto-correction.
 # ENABLE_CORRECTION="true"
@@ -163,6 +164,17 @@ if [[ "$USE_MODERN_TOOLS" == "1" && -o interactive ]]; then
     # command -v btm  &>/dev/null && alias top='btm'
     command -v zoxide &>/dev/null && alias cd='z'
 fi
+
+# Paint the controlling tty into the window title at the shell prompt, e.g.
+# "[pts/10] ~/project", so the cosmic-applet-claude-sessions panel applet can
+# capture a pid -> tty -> window mapping. Claude paints its own topic over this
+# while a session runs (which also lets it auto-name sessions); that's fine —
+# the applet caches the mapping it captured while the shell owned the title.
+# DISABLE_AUTO_TITLE="true" (above) keeps oh-my-zsh from fighting this hook.
+autoload -Uz add-zsh-hook
+_tty_window_title() { printf '\e]2;[%s] %s\a' "${TTY#/dev/}" "${PWD/#$HOME/~}"; }
+add-zsh-hook precmd _tty_window_title
+add-zsh-hook preexec _tty_window_title
 
 # bun completions
 [ -s "/home/stevenguido/.bun/_bun" ] && source "/home/stevenguido/.bun/_bun"
