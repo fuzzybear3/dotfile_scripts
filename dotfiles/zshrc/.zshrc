@@ -103,6 +103,12 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
+# Globbing: don't abort a command when a pattern matches nothing, *as long as*
+# at least one other glob on the line matched (e.g. `ls /dev/ttyUSB* /dev/ttyACM*`
+# succeeds when only one exists). A command whose every glob matches nothing still
+# errors, so `rm foo*` with no match is still caught. See `man zshoptions`.
+setopt csh_null_glob
+
 # export MANPATH="/usr/local/man:$MANPATH"
 
 # You may need to manually set your language environment
