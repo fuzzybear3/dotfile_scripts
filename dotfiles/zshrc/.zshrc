@@ -151,7 +151,7 @@ export PATH="/home/stevenguido/.pixi/bin:$PATH"
 
 # FreeCAD pixi build - force XWayland + system GPU drivers (Coin3D needs GLX)
 alias freecad-dev='QT_QPA_PLATFORM=xcb __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0 /home/stevenguido/repos/FreeCAD/build/release/bin/FreeCAD'
-alias freecad=/home/stevenguido/software/FreeCAD_1.1.1-Linux-x86_64-py311.AppImage
+alias freecad=/home/stevenguido/software/FreeCAD_1.1.3-Linux-x86_64-py311.AppImage
 
 alias python='python3'
 
@@ -188,3 +188,4 @@ add-zsh-hook preexec _tty_window_title
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+source <(COMPLETE=zsh fwflash)

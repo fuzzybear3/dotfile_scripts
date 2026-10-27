@@ -86,3 +86,30 @@
     enabled: true
     state: "{{ 'restarted' if portal_watch_unit.changed else 'started' }}"
     daemon_reload: true
+
+# --- automount removable media ------------------------------------------
+# COSMIC ships no automounter, so USB sticks/SD cards enumerate but never
+# mount. Sandboxed apps (e.g. the Bambu Studio flatpak, which already holds
+# /media + /run/media) then have nowhere to export to. udiskie is a userspace
+# udisks2 client -- no root at runtime, polkit already permits the active
+# session to mount removable devices.
+- name: Install udiskie
+  ansible.builtin.apt:
+    name: udiskie
+    state: present
+  become: true
+
+- name: Install udiskie user service
+  ansible.builtin.copy:
+    src: udiskie.service
+    dest: "{{ ansible_env.HOME }}/.config/systemd/user/udiskie.service"
+    mode: "0644"
+  register: udiskie_unit
+
+- name: Enable + (re)start udiskie
+  ansible.builtin.systemd:
+    name: udiskie.service
+    scope: user
+    enabled: true
+    state: "{{ 'restarted' if udiskie_unit.changed else 'started' }}"
+    daemon_reload: true

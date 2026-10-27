@@ -1,0 +1,14 @@
+[Unit]
+Description=Automount removable media (udiskie)
+Documentation=man:udiskie(8)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/udiskie --automount --notify --no-tray --no-file-manager
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
